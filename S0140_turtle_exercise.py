@@ -102,6 +102,8 @@ def square_spiral(size, margin=2):
         tom.right(90)
         length -= margin
 
+    tom.penup()
+
 
 
 square_spiral(100)
