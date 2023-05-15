@@ -49,6 +49,8 @@ Fortsæt derefter med den næste fil.
 
 import turtle  # this imports a library called "turtle". A library is (someone else's) python code, that you can use in your own program.
 
+tom = turtle.Turtle()
+tom.speed(1)
 
 def visible(turtle_name):  # returns true if both the x- and y-value of the turtle's position are between -480 and 480
     # you will need this: x-value: turtle_name.position()[0]
@@ -63,7 +65,6 @@ def visible(turtle_name):  # returns true if both the x- and y-value of the turt
 
 
 def demo():  # demonstration of basic turtle commands
-    tom = turtle.Turtle()  # create an object named tom of type Turtle
     print(type(tom))
     tom.speed(1)  # fastest: 10, slowest: 1
     for x in range(8):  # do the following for x = 0, 1, 2, 3, 4, 5, 6, 7
@@ -79,18 +80,30 @@ def demo():  # demonstration of basic turtle commands
     tom.right(-90)  # turning -90 degrees right is the same as turning +90 degrees left
     tom.forward(120)
     tom.home()  # return to the original position in the middle of the window
-    turtle.done()  # keeps the turtle window open after the program is done
 
-def square(length):
-    tom = turtle.Turtle()
-    tom.speed(1)
+def square(size, forward=0):
     tom.pendown()
     for n in range(4):
-        tom.forward(length)
+        tom.forward(size)
         tom.right(90)
     tom.penup()
-    tom.home()
+    tom.forward(forward)
 
-    turtle.done()
+def many_squares(num_squares, size=50, margin=4):
+    for i in range(num_squares):
+        square(size, size + margin)
 
-square(100)
+def square_spiral(size, margin=2):
+    length = size
+    tom.pendown()
+
+    while length > 0:
+        tom.forward(length)
+        tom.right(90)
+        length -= margin
+
+
+
+square_spiral(100)
+
+turtle.done()
