@@ -1,3 +1,3 @@
-# aspit-v
+# aspit-s
 
-Dette er repositoriet for mine AspIT Visualiserings-opgaver.
+Dette er repositoriet for mine AspIT Softwarekonstruktion-opgaver.
