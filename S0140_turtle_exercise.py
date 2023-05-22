@@ -48,8 +48,11 @@ Fortsæt derefter med den næste fil.
 """
 
 import turtle  # this imports a library called "turtle". A library is (someone else's) python code, that you can use in your own program.
+import math
+from time import sleep
 
 tom = turtle.Turtle()
+# turtle.setup(800, 600)
 tom.speed(1)
 
 def visible(turtle_name):  # returns true if both the x- and y-value of the turtle's position are between -480 and 480
@@ -89,9 +92,11 @@ def square(size, forward=0):
     tom.penup()
     tom.forward(forward)
 
+
 def many_squares(num_squares, size=50, margin=4):
     for i in range(num_squares):
         square(size, size + margin)
+
 
 def square_spiral(size, margin=2):
     length = size
@@ -105,7 +110,79 @@ def square_spiral(size, margin=2):
     tom.penup()
 
 
+def star(size=100, num_nodes=10):
+    tom.pendown()
+    for i in range(num_nodes):
+        tom.forward(size)
+        # Hvis i er lige, drej 150 grader. Hvis ikke, drej 150 grader til venstre, minus 360 grader divideret med mængden af spidser (math.floor(num_nodes / 2)).
+        tom.right(150 if i % 2 == 0 else -150 + 360 / math.floor(num_nodes / 2))
+    tom.penup()
 
-square_spiral(100)
+
+def box(size=100, rotation=[45, 30]):
+    tom.penup()
+    size = size / 2
+    nodes = [
+        [-size, -size, -size],
+        [-size, -size, size],
+        [-size, size, -size],
+        [-size, size, size],
+        [size, -size, -size],
+        [size, -size, size],
+        [size, size, -size],
+        [size, size, size]
+    ]
+    edges = [
+        [0, 1],
+        [1, 3],
+        [3, 2],
+        [2, 0],
+        [4, 5],
+        [5, 7],
+        [7, 6],
+        [6, 4],
+        [0, 4],
+        [1, 5],
+        [2, 6],
+        [3, 7]
+    ]
+
+    # Rotér punkter i 3-D
+    # X rotation
+    sin_theta = math.sin(rotation[0])
+    cos_theta = math.cos(rotation[0])
+    for i in nodes:
+        i[1] = i[1] * cos_theta - i[2] * sin_theta
+        i[2] = i[2] * cos_theta + i[1] * sin_theta
+
+    # Y rotation
+    sin_theta = math.sin(rotation[1])
+    cos_theta = math.cos(rotation[1])
+    for i in nodes:
+        i[0] = i[0] * cos_theta + i[2] * sin_theta
+        i[2] = i[2] * cos_theta - i[0] * sin_theta
+
+
+    for i in edges:
+        from_node = nodes[i[0]]
+        to_node = nodes[i[1]]
+        tom.goto(from_node[0], from_node[1])
+        tom.pendown()
+        tom.goto(to_node[0], to_node[1])
+        tom.penup()
+
+    tom.home()
+
+def boxAnimation(size=100, yaw=100, step=2):
+    x_rotation = 0
+    while True:
+        box(size, [x_rotation, yaw])
+        sleep(1)
+        tom.clear()
+        x_rotation += step
+
+boxAnimation()
+
+
 
 turtle.done()
