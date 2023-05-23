@@ -152,15 +152,28 @@ def box(size=100, rotation=[45, 30]):
     sin_theta = math.sin(rotation[0])
     cos_theta = math.cos(rotation[0])
     for i in nodes:
-        i[1] = i[1] * cos_theta - i[2] * sin_theta
-        i[2] = i[2] * cos_theta + i[1] * sin_theta
+        y = i[1]
+        z = i[2]
+        i[1] = y * cos_theta - z * sin_theta
+        i[2] = z * cos_theta + y * sin_theta
 
     # Y rotation
     sin_theta = math.sin(rotation[1])
     cos_theta = math.cos(rotation[1])
     for i in nodes:
-        i[0] = i[0] * cos_theta + i[2] * sin_theta
-        i[2] = i[2] * cos_theta - i[0] * sin_theta
+        x = i[0]
+        z = i[2]
+        i[0] = x * cos_theta + z * sin_theta
+        i[2] = z * cos_theta - x * sin_theta
+
+    # Z rotation
+    sin_theta = math.sin(60)
+    cos_theta = math.cos(60)
+    for i in nodes:
+        x = i[0]
+        y = i[1]
+        i[0] = x * cos_theta - y * sin_theta
+        i[1] = y * cos_theta + x * sin_theta
 
 
     for i in edges:
