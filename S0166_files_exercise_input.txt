@@ -1,0 +1,9 @@
+Scout 27
+Soldier 47
+Pyro 42
+Demoman 30
+Heavy 49
+Engineer 34
+Medic 47
+Sniper 30
+Spy 47
