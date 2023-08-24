@@ -49,7 +49,7 @@ class Customer(Base):
     age = Column(Integer)
 
     def __repr__(self):
-        return f"{self.id=}, {self.name=}, {self.address=}, {self.age=}"
+        return f"{self.id=}, {self.name=}, {self.address=}, {self.age=}\n"
 
 class Product(Base):
     __tablename__ = "products"
@@ -59,7 +59,7 @@ class Product(Base):
     brand = Column(String)
 
     def __repr__(self):
-        return f"{self.id=}, {self.product_number=}, {self.price=}, {self.brand=}"
+        return f"{self.id=}, {self.product_number=}, {self.price=}, {self.brand=}\n"
 
 def create_test_data():
     with Session(engine) as session:
@@ -74,8 +74,25 @@ def create_test_data():
         ])
         session.commit()
 
+def get_record(classparam, record_id):
+    with Session(engine) as session:
+        record = session.scalars(select(classparam).where(classparam.id == record_id))
+    return record
+
+def select_all(classparam):  # return a list of all records in classparams table
+    with Session(engine) as session:
+        records = session.scalars(select(classparam))
+        result = []
+        for record in records:
+            result.append(record)
+    return result
+
 
 engine = create_engine(db, echo=False, future=True)
 Base.metadata.create_all(engine)
 
-create_test_data()
+if __name__ == "__main__":
+    create_test_data()
+    print(select_all(Product))
+    print()
+    print(select_all(Customer))
