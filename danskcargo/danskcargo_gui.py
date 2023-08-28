@@ -16,17 +16,17 @@ style = ttk.Style()
 style.theme_use("default")
 style.configure("Treeview", background=treeview_background, rowheight=row_height)
 
-container_frame = tk.LabelFrame(main_window, text="Container")
-container_frame.grid(row=0, column=0, padx=padx, pady=pady)
+frame_container = tk.LabelFrame(main_window, text="Container")
+frame_container.grid(row=0, column=0, padx=padx, pady=pady)
 
-container_treeviewframe = tk.Frame(container_frame)
-container_treeviewframe.grid(row=0, column=0, padx=padx, pady=pady)
+tree_frame_container = tk.Frame(frame_container)
+tree_frame_container.grid(row=0, column=0, padx=padx, pady=pady)
 
-container_treeview_scrollbar = tk.Scrollbar(container_treeviewframe)
-container_treeview_scrollbar.grid(row=0, column=1, padx=padx, pady=pady, sticky="ns")
-container_treeview = ttk.Treeview(container_treeviewframe, yscrollcommand=container_treeview_scrollbar.set, selectmode="browse")
-container_treeview.grid(row=0, column=0, padx=0, pady=pady)
-container_treeview_scrollbar.config(command=container_treeview.yview)
+tree_scroll_container = tk.Scrollbar(tree_frame_container)
+tree_scroll_container.grid(row=0, column=1, padx=padx, pady=pady, sticky="ns")
+tree_container = ttk.Treeview(tree_frame_container, yscrollcommand=tree_scroll_container.set, selectmode="browse")
+tree_container.grid(row=0, column=0, padx=0, pady=pady)
+tree_scroll_container.config(command=tree_container.yview)
 
 if __name__ == "__main__":
     main_window.mainloop()
