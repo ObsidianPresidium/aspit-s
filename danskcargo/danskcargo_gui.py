@@ -28,5 +28,29 @@ tree_container = ttk.Treeview(tree_frame_container, yscrollcommand=tree_scroll_c
 tree_container.grid(row=0, column=0, padx=0, pady=pady)
 tree_scroll_container.config(command=tree_container.yview)
 
+controls_frame_container = tk.Frame(frame_container)
+controls_frame_container.grid(row=1, column=0, padx=padx, pady=pady)
+
+edit_frame_container = tk.Frame(controls_frame_container)
+edit_frame_container.grid(row=0,column=0, padx=padx, pady=pady)
+label_container_id = tk.Label(edit_frame_container, text="ID")
+label_container_id.grid(row=0, column=0, padx=padx, pady=pady)
+label_container_weight = tk.Label(edit_frame_container, text="Weight")
+label_container_weight.grid(row=0, column=1, padx=padx, pady=pady)
+label_container_destination = tk.Label(edit_frame_container, text="Destination")
+label_container_destination.grid(row=0, column=2, padx=padx, pady=pady)
+label_container_weather = tk.Label(edit_frame_container, text="Weather")
+label_container_weather.grid(row=0, column=3, padx=padx, pady=pady)
+entry_container_id = tk.Entry(edit_frame_container, width=4)
+entry_container_id.grid(row=1, column=0, padx=padx, pady=pady)
+entry_container_weight = tk.Entry(edit_frame_container, width=4)
+entry_container_weight.grid(row=1, column=1, padx=padx, pady=pady)
+entry_container_destination = tk.Entry(edit_frame_container, width=8)
+entry_container_destination.grid(row=1, column=2, padx=padx, pady=pady)
+entry_container_weather = tk.Entry(edit_frame_container, width=6)
+entry_container_weather.grid(row=1, column=3, padx=padx, pady=pady)
+
+
+
 if __name__ == "__main__":
     main_window.mainloop()
