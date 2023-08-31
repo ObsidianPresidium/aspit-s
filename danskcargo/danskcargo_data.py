@@ -82,10 +82,13 @@ class Transport(Object):
         self.container_id = container_id
         self.aircraft_id = aircraft_id
 
-engine = create_engine(db, echo=False, future=True)
-Base.metadata.create_all(engine)
+def export_engine():
+    engine = create_engine(db, echo=False, future=True)
+    Base.metadata.create_all(engine)
+    return engine
 
 def create_data(records):
+    engine = export_engine()
     with Session(engine) as session:
         session.add_all(records)
         session.commit()
