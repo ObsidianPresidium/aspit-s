@@ -12,6 +12,9 @@ class Object(Base):
     def __init__(self):
         super().__init__()
 
+    def __repr__(self):
+        return self.__class__.__name__ + " type. I have the attributes " + repr(self.attributes)
+
     attributes = []
 
     def convert_to_tuple(self):
