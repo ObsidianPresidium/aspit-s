@@ -11,7 +11,7 @@ treeview_selected = "#206030"
 row_height = 24
 
 main_window = tk.Tk()
-main_window.title = "asdf"
+main_window.title("Danskcargo Container App")
 main_window.geometry("1200x500")
 padx=8
 pady=4
@@ -96,7 +96,7 @@ class Category:
         result = dcsql.select_all(self.classparam)
         print(result[0])
         for record in result:
-            if record.valid():
+            if record.valid("ALL"):
                 if count % 2 == 0:
                     self.tree.insert(parent="", index="end", iid=str(count), text="", values=record.convert_to_tuple(), tags=("evenrow",))
                 else:
@@ -157,7 +157,7 @@ class CategoryAircraft(Category):
         self.tree.heading("maxweight", text="Max. Carg. Weight", anchor=tk.CENTER)
         self.tree.heading("registration", text="Registration", anchor=tk.CENTER)
 
-        label_id = tk.Label(self.edit_frame, text="ID")
+        label_id = tk.Label(self.edit_frame, text="Id")
         label_id.grid(row=0, column=0, padx=padx, pady=pady)
         label_maxweight = tk.Label(self.edit_frame, text="Max.Carg.Wgt.")
         label_maxweight.grid(row=0, column=1, padx=padx, pady=pady)
@@ -188,7 +188,7 @@ class CategoryTransport(Category):
         self.tree.heading("containerid", text="Container Id", anchor=tk.CENTER)
         self.tree.heading("aircraftid", text="Aircraft Id", anchor=tk.CENTER)
 
-        label_id = tk.Label(self.edit_frame, text="ID")
+        label_id = tk.Label(self.edit_frame, text="Id")
         label_id.grid(row=0, column=0, padx=padx, pady=pady)
         label_date = tk.Label(self.edit_frame, text="Date")
         label_date.grid(row=0, column=1, padx=padx, pady=pady)
