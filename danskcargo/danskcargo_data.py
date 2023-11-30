@@ -12,16 +12,13 @@ class Object(Base):
     def __init__(self):
         super().__init__()
 
-    def __repr__(self):
-        return self.__class__.__name__ + " type. I have the attributes " + repr(self.attributes)
+    # def __repr__(self):
+    #     return self.__class__.__name__ + " type. I have the attributes " + repr(self.attributes)
 
     attributes = []
 
     def convert_to_tuple(self):
-        result = ()
-        for i in self.attributes:
-            result += i
-        return result
+        return ("N/A")
 
     def valid(self, record):
         def do_test(test_record):
@@ -59,6 +56,9 @@ class Container(Object):
         self.weight = weight
         self.destination = destination
 
+    def convert_to_tuple(self):
+        return self.id, self.weight, self.destination
+
 class Aircraft(Object):
     __tablename__ = "aircraft"
     id = Column(Integer, primary_key=True)
@@ -70,6 +70,9 @@ class Aircraft(Object):
         super().__init__()
         self.capacity = capacity
         self.registration = registration
+
+    def convert_to_tuple(self):
+        return self.id, self.capacity, self.registration
 
 class Transport(Object):
     __tablename__ = "transport"
@@ -84,6 +87,9 @@ class Transport(Object):
         self.date = date
         self.container_id = container_id
         self.aircraft_id = aircraft_id
+
+    def convert_to_tuple(self):
+        return self.id, self.date, self.container_id, self.aircraft_id
 
 def export_engine():
     engine = create_engine(db, echo=False, future=True)
