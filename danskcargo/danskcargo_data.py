@@ -65,7 +65,7 @@ class Transport(Object):
     date = Column(String)
     container_id = Column(Integer)
     aircraft_id = Column(Integer)
-    attributes_names = ["id", "date", "container_id", "aircraft_id"]
+    attributes_names = ["id", "date", "containerid", "aircraftid"]
     valid_test_attribute = 2
 
     def __init__(self, date, container_id, aircraft_id):

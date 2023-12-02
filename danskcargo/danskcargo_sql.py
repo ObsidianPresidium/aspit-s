@@ -59,9 +59,9 @@ def delete_soft(classparam, entry_tuple):
     # soft delete a record in a table specified by classparam by making one of its values invalid
     matched_dict = match_attributes_and_entry_tuple(classparam, entry_tuple)
     if classparam == Transport:
-        matched_dict["container_id"] = -1
+        matched_dict["containerid"] = -1
     elif classparam == Aircraft:
-        matched_dict["max_weight"] = -1
+        matched_dict["capacity"] = -1
     elif classparam == Container:
         matched_dict["weight"] = -1
     else:
