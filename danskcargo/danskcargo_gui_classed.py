@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import tkinter.messagebox as tkmsg
 import danskcargo_sql as dcsql
 from danskcargo_data import Container, Aircraft, Transport
 
@@ -30,6 +31,7 @@ class Category:
         self.entries = []
         self.category_name = category_name
         self.classparam = eval(category_name.capitalize())
+        # endregion globals
 
         # region gui
         self.root_frame = tk.LabelFrame(main_window, text=category_name.capitalize())
@@ -56,9 +58,9 @@ class Category:
         self.button_frame.grid(row=2, column=0, padx=padx, pady=pady)
         self.button_create = tk.Button(self.button_frame, text="Create")
         self.button_create.grid(row=0, column=0, padx=padx, pady=pady)
-        self.button_update = tk.Button(self.button_frame, text="Update")
+        self.button_update = tk.Button(self.button_frame, text="Update", command=self.update)
         self.button_update.grid(row=0, column=1, padx=padx, pady=pady)
-        self.button_delete = tk.Button(self.button_frame, text="Delete")
+        self.button_delete = tk.Button(self.button_frame, text="Delete", command=self.delete)
         self.button_delete.grid(row=0, column=2, padx=padx, pady=pady)
         self.button_clear = tk.Button(self.button_frame, text="Clear Entry Boxes", command=self.clear_entries)
         self.button_clear.grid(row=0, column=3, padx=padx, pady=pady)
@@ -66,7 +68,7 @@ class Category:
 
         categories.append(self)
 
-    def read_container_entries(self):
+    def read_entries(self):
         out_tuple = ()
         for entry in self.entries:
             out_tuple += (entry.get(),)
@@ -75,11 +77,16 @@ class Category:
 
     def write_entries(self, values):
         if len(values) != 0:
-            if len(values) != len(self.entries):
-                raise ValueError("There are either too many or too few values to insert into the entries in this category!")
+            if self.classparam != Container:  # containers have the weather entry also, we need to circumvent an error
+                if len(values) != len(self.entries):
+                    raise ValueError("There are either too many or too few values to insert into the entries in this category!")
 
-            for entry in enumerate(self.entries):
-                entry[1].insert(0, values[entry[0]])
+                for entry in enumerate(self.entries):
+                    entry[1].insert(0, values[entry[0]])
+            else:
+                self.entries[0].insert(0, values[0])
+                self.entries[1].insert(0, values[1])
+                self.entries[2].insert(0, values[2])
 
     def clear_entries(self):
         for entry in self.entries:
@@ -94,9 +101,8 @@ class Category:
     def read_table(self):
         count = 0
         result = dcsql.select_all(self.classparam)
-        print(result[0])
         for record in result:
-            if record.valid("ALL"):
+            if record.valid():
                 if count % 2 == 0:
                     self.tree.insert(parent="", index="end", iid=str(count), text="", values=record.convert_to_tuple(), tags=("evenrow",))
                 else:
@@ -109,6 +115,15 @@ class Category:
     def refresh_tree(self):
         self.empty_tree()
         self.read_table()
+
+    def update(self):
+        dcsql.update_record(self.classparam, self.read_entries())
+        self.refresh_tree()
+
+    def delete(self):
+        dcsql.delete_soft(self.classparam, self.read_entries())
+        self.clear_entries()
+        self.refresh_tree()
 
 
 class CategoryContainer(Category):
@@ -204,6 +219,9 @@ class CategoryTransport(Category):
         entry_containerid.grid(row=1, column=2, padx=padx, pady=pady)
         entry_aircraftid = tk.Entry(self.edit_frame, width=4)
         entry_aircraftid.grid(row=1, column=3, padx=padx, pady=pady)
+
+        self.entries = [entry_id, entry_date, entry_containerid, entry_aircraftid]
+
 
 container = CategoryContainer()
 aircraft = CategoryAircraft()
