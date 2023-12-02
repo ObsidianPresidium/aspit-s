@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, select
 import os
 
 db = "sqlite:///danskcargo_database.db"
+engine = create_engine(db, echo=False, future=True)
 Base = declarative_base()
 
 class Object(Base):
@@ -15,41 +16,25 @@ class Object(Base):
     # def __repr__(self):
     #     return self.__class__.__name__ + " type. I have the attributes " + repr(self.attributes)
 
-    attributes = []
+    attributes_names = []
+    valid_test_attribute = 1
 
     def convert_to_tuple(self):
         return ("N/A")
 
-    def valid(self, record):
-        def do_test(test_record):
-            if test_record.type == "INTEGER":
-                try:
-                    value = int(test_record)
-                except ValueError:
-                    return False
-                return value >= 0
-            elif test_record.type == "VARCHAR":
-                try:
-                    value = str(test_record)
-                except ValueError:
-                    return False
-            else:
-                return False
-
-        if record == "ALL":
-            valid_attributes = []
-            for i in self.attributes:
-                valid_attributes.append(do_test(i))
-            return valid_attributes
-        else:
-            return do_test(record)
+    def valid(self):
+        try:
+            value = int(self.convert_to_tuple()[self.valid_test_attribute])
+        except ValueError:
+            return False
+        return value >= 0
 
 class Container(Object):
     __tablename__ = "containers"
     id = Column(Integer, primary_key=True)
     weight = Column(Integer)
     destination = Column(String)
-    attributes = [id, weight, destination]
+    attributes_names = ["id", "weight", "destination"]
 
     def __init__(self, weight, destination):
         super().__init__()
@@ -64,7 +49,7 @@ class Aircraft(Object):
     id = Column(Integer, primary_key=True)
     capacity = Column(Integer)
     registration = Column(String)
-    attributes = [id, capacity, registration]
+    attributes_names = ["id", "capacity", "registration"]
 
     def __init__(self, capacity, registration):
         super().__init__()
@@ -80,7 +65,8 @@ class Transport(Object):
     date = Column(String)
     container_id = Column(Integer)
     aircraft_id = Column(Integer)
-    attributes = [id, date, container_id, aircraft_id]
+    attributes_names = ["id", "date", "container_id", "aircraft_id"]
+    valid_test_attribute = 2
 
     def __init__(self, date, container_id, aircraft_id):
         super().__init__()
@@ -90,6 +76,7 @@ class Transport(Object):
 
     def convert_to_tuple(self):
         return self.id, self.date, self.container_id, self.aircraft_id
+
 
 def export_engine():
     engine = create_engine(db, echo=False, future=True)
