@@ -1,9 +1,7 @@
-from sqlalchemy.orm import declarative_base, Session  # install sqlalchemy with the command "pip install SQLAlchemy" in a terminal.
+from sqlalchemy.orm import Session  # install sqlalchemy with the command "pip install SQLAlchemy" in a terminal.
 from sqlalchemy.engine import Engine
-from sqlalchemy import Column, String, Integer  # the library sqlalchemy helps us to work with a database
 from sqlalchemy import create_engine, select, event, update, delete
 from danskcargo_data import export_engine, Container, Aircraft, Transport
-import os
 
 db = "sqlite:///danskcargo_database.db"
 engine = create_engine(db, echo=False, future=True)
