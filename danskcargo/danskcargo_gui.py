@@ -1,7 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
-from danskcargo_func import clear_entry_boxes
+from tkinter import messagebox
+import danskcargo_sql as dcsql
+import danskcargo_data as dcd
+import danskcargo_func as dcf
+from danskcargo_data import Container, Aircraft, Transport
 
+
+window_name = "Danskcargo Container App"
 even_row_color = "#cccccc"
 odd_row_color = "#dddddd"
 treeview_background = "#eeeeee"
@@ -10,8 +16,7 @@ treeview_selected = "#206030"
 row_height = 24
 
 main_window = tk.Tk()
-main_window.title = "asdf"
-main_window.geometry("1100x430")
+main_window.title(window_name)
 padx=8
 pady=4
 
@@ -20,155 +25,247 @@ style.theme_use("default")
 style.configure("Treeview", background=treeview_background, foreground=treeview_foreground, rowheight=row_height, fieldbackground=treeview_background)
 style.map("Treeview", background=[("selected", treeview_selected)])
 
-frame_container = tk.LabelFrame(main_window, text="Container")
-frame_container.grid(row=0, column=0, padx=padx, pady=pady)
+categories = []
 
-tree_frame_container = tk.Frame(frame_container)
-tree_frame_container.grid(row=0, column=0, padx=padx, pady=pady)
+class Category:
+    def __init__(self, category_name):
 
-tree_scroll_container = tk.Scrollbar(tree_frame_container)
-tree_scroll_container.grid(row=0, column=1, padx=padx, pady=pady, sticky="ns")
-tree_container = ttk.Treeview(tree_frame_container, yscrollcommand=tree_scroll_container.set, selectmode="browse")
-tree_container.grid(row=0, column=0, padx=0, pady=pady)
-tree_container["columns"] = ("id", "weight", "destination")
-tree_container.column("#0", width=0, stretch=tk.NO)
-tree_container.column("id", anchor=tk.E, width=40)
-tree_container.column("weight", anchor=tk.E, width=80)
-tree_container.column("destination", anchor=tk.W, width=200)
-tree_container.heading("#0", text="", anchor=tk.W)
-tree_container.heading("id", text="Id", anchor=tk.CENTER)
-tree_container.heading("weight", text="Weight", anchor=tk.CENTER)
-tree_container.heading("destination", text="Destination", anchor=tk.CENTER)
-tree_container.tag_configure("oddrow", background=odd_row_color)
-tree_container.tag_configure("evenrow", background=even_row_color)
-tree_scroll_container.config(command=tree_container.yview)
+        # region globals
+        self.entries = []
+        self.category_name = category_name
+        self.classparam = eval(category_name.capitalize())
+        # endregion globals
 
-controls_frame_container = tk.Frame(frame_container)
-controls_frame_container.grid(row=1, column=0, padx=padx, pady=pady)
+        # region gui
+        self.root_frame = tk.LabelFrame(main_window, text=category_name.capitalize())
+        self.root_frame.grid(row=0, column=len(categories), padx=padx, pady=pady)
 
-edit_frame_container = tk.Frame(controls_frame_container)
-edit_frame_container.grid(row=0,column=0, padx=padx, pady=pady)
-label_container_id = tk.Label(edit_frame_container, text="ID")
-label_container_id.grid(row=0, column=0, padx=padx, pady=pady)
-label_container_weight = tk.Label(edit_frame_container, text="Weight")
-label_container_weight.grid(row=0, column=1, padx=padx, pady=pady)
-label_container_destination = tk.Label(edit_frame_container, text="Destination")
-label_container_destination.grid(row=0, column=2, padx=padx, pady=pady)
-label_container_weather = tk.Label(edit_frame_container, text="Weather")
-label_container_weather.grid(row=0, column=3, padx=padx, pady=pady)
-entry_container_id = tk.Entry(edit_frame_container, width=4)
-entry_container_id.grid(row=1, column=0, padx=padx, pady=pady)
-entry_container_weight = tk.Entry(edit_frame_container, width=4)
-entry_container_weight.grid(row=1, column=1, padx=padx, pady=pady)
-entry_container_destination = tk.Entry(edit_frame_container, width=8)
-entry_container_destination.grid(row=1, column=2, padx=padx, pady=pady)
-entry_container_weather = tk.Entry(edit_frame_container, width=6)
-entry_container_weather.grid(row=1, column=3, padx=padx, pady=pady)
+        self.tree_frame = tk.Frame(self.root_frame)
+        self.tree_frame.grid(row=0, column=0, padx=padx, pady=pady)
+        self.tree_scroll = tk.Scrollbar(self.tree_frame)
+        self.tree_scroll.grid(row=0, column=1, padx=padx, pady=pady, sticky="ns")
+        self.tree = ttk.Treeview(self.tree_frame, yscrollcommand=self.tree_scroll.set, selectmode="browse")
+        self.tree.grid(row=0, column=0, padx=0, pady=pady)
+        self.tree_scroll.config(command=self.tree.yview)
+        self.tree.tag_configure("oddrow", background=odd_row_color)
+        self.tree.tag_configure("evenrow", background=even_row_color)
+        self.tree.bind("<ButtonRelease-1>", lambda event: self.edit_tree(event))
 
-button_frame_container = tk.Frame(frame_container)
-button_frame_container.grid(row=2, column=0, padx=padx, pady=pady)
+        self.controls_frame = tk.Frame(self.root_frame)
+        self.controls_frame.grid(row=1, column=0, padx=padx, pady=pady)
 
-button_container_create = tk.Button(button_frame_container, text="Create")
-button_container_create.grid(row=0, column=0, padx=padx, pady=pady)
-button_container_update = tk.Button(button_frame_container, text="Update")
-button_container_update.grid(row=0, column=1, padx=padx, pady=pady)
-button_container_delete = tk.Button(button_frame_container, text="Delete")
-button_container_delete.grid(row=0, column=2, padx=padx, pady=pady)
-button_container_clear_func = clear_entry_boxes([entry_container_id, entry_container_weight, entry_container_destination, entry_container_weather])
-button_container_clear = tk.Button(button_frame_container, text="Clear Entry Boxes", command=button_container_clear_func)
-button_container_clear.grid(row=0, column=3, padx=padx, pady=pady)
+        self.edit_frame = tk.Frame(self.controls_frame)
+        self.edit_frame.grid(row=0, column=0, padx=padx, pady=pady)
+        
+        self.button_frame = tk.Frame(self.controls_frame)
+        self.button_frame.grid(row=2, column=0, padx=padx, pady=pady)
+        self.button_create = tk.Button(self.button_frame, text="Create", command=self.create)
+        self.button_create.grid(row=0, column=0, padx=padx, pady=pady)
+        self.button_update = tk.Button(self.button_frame, text="Update", command=self.update)
+        self.button_update.grid(row=0, column=1, padx=padx, pady=pady)
+        self.button_delete = tk.Button(self.button_frame, text="Delete", command=self.delete)
+        self.button_delete.grid(row=0, column=2, padx=padx, pady=pady)
+        self.button_clear = tk.Button(self.button_frame, text="Clear Entry Boxes", command=self.clear_entries)
+        self.button_clear.grid(row=0, column=3, padx=padx, pady=pady)
+        # endregion gui
+
+        categories.append(self)
+
+    def read_entries(self):
+        out_tuple = ()
+        for entry in self.entries:
+            out_tuple += (entry.get(),)
+
+        return out_tuple
+
+    def write_entries(self, values):
+        if len(values) != 0:
+            if self.classparam != Container:  # containers have the weather entry also, we need to circumvent an error
+                if len(values) != len(self.entries):
+                    raise ValueError("There are either too many or too few values to insert into the entries in this category!")
+
+                for entry in enumerate(self.entries):
+                    entry[1].insert(0, values[entry[0]])
+            else:
+                self.entries[0].insert(0, values[0])
+                self.entries[1].insert(0, values[1])
+                self.entries[2].insert(0, values[2])
+
+    def clear_entries(self):
+        for entry in self.entries:
+            entry.delete(0, tk.END)
+
+    def edit_tree(self, event):
+        index_selected = self.tree.focus()
+        values = self.tree.item(index_selected, "values")
+        self.clear_entries()
+        self.write_entries(values)
+
+    def read_table(self):
+        count = 0
+        result = dcsql.select_all(self.classparam)
+        for record in result:
+            if record.valid():
+                if count % 2 == 0:
+                    self.tree.insert(parent="", index="end", iid=str(count), text="", values=record.convert_to_tuple(), tags=("evenrow",))
+                else:
+                    self.tree.insert(parent="", index="end", iid=str(count), text="", values=record.convert_to_tuple(), tags=("oddrow",))
+                count += 1
+
+    def empty_tree(self):
+        self.tree.delete(*self.tree.get_children())
+
+    def refresh_tree(self):
+        self.empty_tree()
+        self.read_table()
+
+    def create(self):
+        record = dcd.convert_from_tuple(self.classparam, self.read_entries())
+        if record.valid():
+            dcsql.create_record(record)
+            self.clear_entries()
+            self.refresh_tree()
+        else:
+            messagebox.showwarning(window_name, "Either the Weight, Capacity, or Aircraft Id is missing or negative.")
+
+    def update(self):
+        test_record = dcd.convert_from_tuple(self.classparam, self.read_entries())
+        if test_record.valid():
+            dcsql.update_record(self.classparam, self.read_entries())
+            self.refresh_tree()
+        else:
+            messagebox.showwarning(window_name, "Either the Weight, Capacity, or Aircraft Id is missing or negative.")
+
+    def delete(self):
+        dcsql.delete_soft(self.classparam, self.read_entries())
+        self.clear_entries()
+        self.refresh_tree()
 
 
-frame_aircraft = tk.LabelFrame(main_window, text="Aircraft")
-frame_aircraft.grid(row=0, column=1, padx=padx, pady=pady)
+class CategoryContainer(Category):
+    def __init__(self):
+        super().__init__("container")
+        self.tree["columns"] = ("id", "weight", "destination")
+        self.tree.column("#0", width=0, stretch=tk.NO)
+        self.tree.column("id", anchor=tk.E, width=40)
+        self.tree.column("weight", anchor=tk.E, width=80)
+        self.tree.column("destination", anchor=tk.W, width=200)
+        self.tree.heading("#0", text="", anchor=tk.W)
+        self.tree.heading("id", text="Id", anchor=tk.CENTER)
+        self.tree.heading("weight", text="Weight", anchor=tk.CENTER)
+        self.tree.heading("destination", text="Destination", anchor=tk.CENTER)
 
-tree_frame_aircraft = tk.Frame(frame_aircraft)
-tree_frame_aircraft.grid(row=0, column=0, padx=padx, pady=pady)
+        label_id = tk.Label(self.edit_frame, text="Id")
+        label_id.grid(row=0, column=0, padx=padx, pady=pady)
+        label_weight = tk.Label(self.edit_frame, text="Weight")
+        label_weight.grid(row=0, column=1, padx=padx, pady=pady)
+        label_destination = tk.Label(self.edit_frame, text="Destination")
+        label_destination.grid(row=0, column=2, padx=padx, pady=pady)
+        label_weather = tk.Label(self.edit_frame, text="Weather")
+        label_weather.grid(row=0, column=3, padx=padx, pady=pady)
+        entry_id = tk.Entry(self.edit_frame, width=4)
+        entry_id.grid(row=1, column=0, padx=padx, pady=pady)
+        entry_weight = tk.Entry(self.edit_frame, width=4)
+        entry_weight.grid(row=1, column=1, padx=padx, pady=pady)
+        entry_destination = tk.Entry(self.edit_frame, width=12)
+        entry_destination.grid(row=1, column=2, padx=padx, pady=pady)
+        entry_weather = tk.Entry(self.edit_frame, width=8)
+        entry_weather.grid(row=1, column=3, padx=padx, pady=pady)
 
-tree_scroll_aircraft = tk.Scrollbar(tree_frame_aircraft)
-tree_scroll_aircraft.grid(row=0, column=1, padx=padx, pady=pady, sticky="ns")
-tree_aircraft = ttk.Treeview(tree_frame_aircraft, yscrollcommand=tree_scroll_aircraft.set, selectmode="browse")
-tree_aircraft.grid(row=0, column=0, padx=0, pady=pady)
-tree_scroll_aircraft.config(command=tree_aircraft.yview)
-
-controls_frame_aircraft = tk.Frame(frame_aircraft)
-controls_frame_aircraft.grid(row=1, column=0, padx=padx, pady=pady)
-
-edit_frame_aircraft = tk.Frame(controls_frame_aircraft)
-edit_frame_aircraft.grid(row=0,column=0, padx=padx, pady=pady)
-label_aircraft_id = tk.Label(edit_frame_aircraft, text="ID")
-label_aircraft_id.grid(row=0, column=0, padx=padx, pady=pady)
-label_aircraft_maxweight = tk.Label(edit_frame_aircraft, text="Max.Carg.Wgt.")
-label_aircraft_maxweight.grid(row=0, column=1, padx=padx, pady=pady)
-label_aircraft_registration = tk.Label(edit_frame_aircraft, text="Registration")
-label_aircraft_registration.grid(row=0, column=2, padx=padx, pady=pady)
-entry_aircraft_id = tk.Entry(edit_frame_aircraft, width=4)
-entry_aircraft_id.grid(row=1, column=0, padx=padx, pady=pady)
-entry_aircraft_maxweight = tk.Entry(edit_frame_aircraft, width=4)
-entry_aircraft_maxweight.grid(row=1, column=1, padx=padx, pady=pady)
-entry_aircraft_registration = tk.Entry(edit_frame_aircraft, width=8)
-entry_aircraft_registration.grid(row=1, column=2, padx=padx, pady=pady)
-
-button_frame_aircraft = tk.Frame(frame_aircraft)
-button_frame_aircraft.grid(row=2, column=0, padx=padx, pady=pady)
-
-button_aircraft_create = tk.Button(button_frame_aircraft, text="Create")
-button_aircraft_create.grid(row=0, column=0, padx=padx, pady=pady)
-button_aircraft_update = tk.Button(button_frame_aircraft, text="Update")
-button_aircraft_update.grid(row=0, column=1, padx=padx, pady=pady)
-button_aircraft_delete = tk.Button(button_frame_aircraft, text="Delete")
-button_aircraft_delete.grid(row=0, column=2, padx=padx, pady=pady)
-button_aircraft_clear_func = clear_entry_boxes([entry_aircraft_id, entry_aircraft_maxweight, entry_aircraft_registration])
-button_aircraft_clear = tk.Button(button_frame_aircraft, text="Clear Entry Boxes", command=button_aircraft_clear_func)
-button_aircraft_clear.grid(row=0, column=3, padx=padx, pady=pady)
+        self.entries = [entry_id, entry_weight, entry_destination, entry_weather]
 
 
-frame_transport = tk.LabelFrame(main_window, text="Transport")
-frame_transport.grid(row=0, column=2, padx=padx, pady=pady)
+class CategoryAircraft(Category):
+    def __init__(self):
+        super().__init__("aircraft")
+        self.tree["columns"] = ("id", "maxweight", "registration")
+        self.tree.column("#0", width=0, stretch=tk.NO)
+        self.tree.column("id", anchor=tk.E, width=40)
+        self.tree.column("maxweight", anchor=tk.E, width=100)
+        self.tree.column("registration", anchor=tk.W, width=100)
+        self.tree.heading("#0", text="", anchor=tk.W)
+        self.tree.heading("id", text="Id", anchor=tk.CENTER)
+        self.tree.heading("maxweight", text="Max. Carg. Weight", anchor=tk.CENTER)
+        self.tree.heading("registration", text="Registration", anchor=tk.CENTER)
 
-tree_frame_transport = tk.Frame(frame_transport)
-tree_frame_transport.grid(row=0, column=0, padx=padx, pady=pady)
+        label_id = tk.Label(self.edit_frame, text="Id")
+        label_id.grid(row=0, column=0, padx=padx, pady=pady)
+        label_maxweight = tk.Label(self.edit_frame, text="Max.Carg.Wgt.")
+        label_maxweight.grid(row=0, column=1, padx=padx, pady=pady)
+        label_registration = tk.Label(self.edit_frame, text="Registration")
+        label_registration.grid(row=0, column=2, padx=padx, pady=pady)
+        entry_id = tk.Entry(self.edit_frame, width=4)
+        entry_id.grid(row=1, column=0, padx=padx, pady=pady)
+        entry_maxweight = tk.Entry(self.edit_frame, width=8)
+        entry_maxweight.grid(row=1, column=1, padx=padx, pady=pady)
+        entry_registration = tk.Entry(self.edit_frame, width=8)
+        entry_registration.grid(row=1, column=2, padx=padx, pady=pady)
 
-tree_scroll_transport = tk.Scrollbar(tree_frame_transport)
-tree_scroll_transport.grid(row=0, column=1, padx=padx, pady=pady, sticky="ns")
-tree_transport = ttk.Treeview(tree_frame_transport, yscrollcommand=tree_scroll_transport.set, selectmode="browse")
-tree_transport.grid(row=0, column=0, padx=0, pady=pady)
-tree_scroll_transport.config(command=tree_transport.yview)
+        self.entries = [entry_id, entry_maxweight, entry_registration]
 
-controls_frame_transport = tk.Frame(frame_transport)
-controls_frame_transport.grid(row=1, column=0, padx=padx, pady=pady)
 
-edit_frame_transport = tk.Frame(controls_frame_transport)
-edit_frame_transport.grid(row=0,column=0, padx=padx, pady=pady)
-label_transport_id = tk.Label(edit_frame_transport, text="ID")
-label_transport_id.grid(row=0, column=0, padx=padx, pady=pady)
-label_transport_date = tk.Label(edit_frame_transport, text="Date")
-label_transport_date.grid(row=0, column=1, padx=padx, pady=pady)
-label_transport_containerid = tk.Label(edit_frame_transport, text="Container ID")
-label_transport_containerid.grid(row=0, column=2, padx=padx, pady=pady)
-label_transport_aircraftid = tk.Label(edit_frame_transport, text="Aircraft ID")
-label_transport_aircraftid.grid(row=0, column=3, padx=padx, pady=pady)
-entry_transport_id = tk.Entry(edit_frame_transport, width=4)
-entry_transport_id.grid(row=1, column=0, padx=padx, pady=pady)
-entry_transport_date = tk.Entry(edit_frame_transport, width=4)
-entry_transport_date.grid(row=1, column=1, padx=padx, pady=pady)
-entry_transport_containerid = tk.Entry(edit_frame_transport, width=8)
-entry_transport_containerid.grid(row=1, column=2, padx=padx, pady=pady)
-entry_transport_aircraftid = tk.Entry(edit_frame_transport, width=4)
-entry_transport_aircraftid.grid(row=1, column=3, padx=padx, pady=pady)
+class CategoryTransport(Category):
+    def __init__(self):
+        super().__init__("transport")
+        self.tree["columns"] = ("id", "date", "containerid", "aircraftid")
+        self.tree.column("#0", width=0, stretch=tk.NO)
+        self.tree.column("id", anchor=tk.E, width=40)
+        self.tree.column("date", anchor=tk.E, width=80)
+        self.tree.column("containerid", anchor=tk.E, width=70)
+        self.tree.column("aircraftid", anchor=tk.E, width=70)
+        self.tree.heading("#0", text="", anchor=tk.W)
+        self.tree.heading("id", text="Id", anchor=tk.CENTER)
+        self.tree.heading("date", text="Date", anchor=tk.CENTER)
+        self.tree.heading("containerid", text="Container Id", anchor=tk.CENTER)
+        self.tree.heading("aircraftid", text="Aircraft Id", anchor=tk.CENTER)
 
-button_frame_transport = tk.Frame(frame_transport)
-button_frame_transport.grid(row=2, column=0, padx=padx, pady=pady)
+        label_id = tk.Label(self.edit_frame, text="Id")
+        label_id.grid(row=0, column=0, padx=padx, pady=pady)
+        label_date = tk.Label(self.edit_frame, text="Date")
+        label_date.grid(row=0, column=1, padx=padx, pady=pady)
+        label_containerid = tk.Label(self.edit_frame, text="Container Id")
+        label_containerid.grid(row=0, column=2, padx=padx, pady=pady)
+        label_aircraftid = tk.Label(self.edit_frame, text="Aircraft Id")
+        label_aircraftid.grid(row=0, column=3, padx=padx, pady=pady)
+        entry_id = tk.Entry(self.edit_frame, width=4)
+        entry_id.grid(row=1, column=0, padx=padx, pady=pady)
+        entry_date = tk.Entry(self.edit_frame, width=12)
+        entry_date.grid(row=1, column=1, padx=padx, pady=pady)
+        entry_containerid = tk.Entry(self.edit_frame, width=4)
+        entry_containerid.grid(row=1, column=2, padx=padx, pady=pady)
+        entry_aircraftid = tk.Entry(self.edit_frame, width=4)
+        entry_aircraftid.grid(row=1, column=3, padx=padx, pady=pady)
 
-button_transport_create = tk.Button(button_frame_transport, text="Create")
-button_transport_create.grid(row=0, column=0, padx=padx, pady=pady)
-button_transport_update = tk.Button(button_frame_transport, text="Update")
-button_transport_update.grid(row=0, column=1, padx=padx, pady=pady)
-button_transport_delete = tk.Button(button_frame_transport, text="Delete")
-button_transport_delete.grid(row=0, column=2, padx=padx, pady=pady)
-button_transport_clear_func = clear_entry_boxes([entry_transport_id, entry_transport_date, entry_transport_containerid, entry_transport_aircraftid])
-button_transport_clear = tk.Button(button_frame_transport, text="Clear Entry Boxes", command=button_transport_clear_func)
-button_transport_clear.grid(row=0, column=3, padx=padx, pady=pady)
+        self.entries = [entry_id, entry_date, entry_containerid, entry_aircraftid]
+
+    def check_and_return_transport(self):
+        transport = dcd.convert_from_tuple(self.classparam, self.read_entries())
+        capacity_ok = dcf.capacity_available(dcsql.get_record(dcd.Aircraft, self.entries[3].get()), self.entries[1].get(), dcsql.get_record(dcd.Container, self.entries[2].get()))  # self.entries[3] refers to target aircraft id, self.entries[1] refers to target date, self.entries[2] refers to target container id
+        destination_ok = dcf.max_one_destination(dcsql.get_record(dcd.Aircraft, self.entries[3].get()), self.entries[1].get(), dcsql.get_record(dcd.Container, self.entries[2].get()))  # self.entries[3] refers to target aircraft id, self.entries[1] refers to target date, self.entries[2] refers to target container id
+        if destination_ok:
+            if capacity_ok:
+                return transport
+            else:
+                messagebox.showwarning(window_name, "Not enough capacity on aircraft!")
+        else:
+            messagebox.showwarning(window_name, "Aircraft already has another destination!")
+
+    def create(self):
+        dcsql.create_record(self.check_and_return_transport())
+        self.clear_entries()
+        self.refresh_tree()
+
+    def update(self):
+        dcsql.update_record(dcd.Transport, self.check_and_return_transport().convert_to_tuple())
+        self.clear_entries()
+        self.refresh_tree()
+
+
+container = CategoryContainer()
+aircraft = CategoryAircraft()
+transport = CategoryTransport()
 
 if __name__ == "__main__":
+    for category in categories:
+        category.refresh_tree()
     main_window.mainloop()
