@@ -7,6 +7,7 @@ import danskcargo_func as dcf
 from danskcargo_data import Container, Aircraft, Transport
 
 
+window_name = "Danskcargo Container App"
 even_row_color = "#cccccc"
 odd_row_color = "#dddddd"
 treeview_background = "#eeeeee"
@@ -15,8 +16,7 @@ treeview_selected = "#206030"
 row_height = 24
 
 main_window = tk.Tk()
-main_window.title("Danskcargo Container App")
-main_window.geometry("1200x500")
+main_window.title(window_name)
 padx=8
 pady=4
 
@@ -121,13 +121,20 @@ class Category:
 
     def create(self):
         record = dcd.convert_from_tuple(self.classparam, self.read_entries())
-        dcsql.create_record(record)
-        self.clear_entries()
-        self.refresh_tree()
+        if record.valid():
+            dcsql.create_record(record)
+            self.clear_entries()
+            self.refresh_tree()
+        else:
+            messagebox.showwarning(window_name, "Either the Weight, Capacity, or Aircraft Id is missing or negative.")
 
     def update(self):
-        dcsql.update_record(self.classparam, self.read_entries())
-        self.refresh_tree()
+        test_record = dcd.convert_from_tuple(self.classparam, self.read_entries())
+        if test_record.valid():
+            dcsql.update_record(self.classparam, self.read_entries())
+            self.refresh_tree()
+        else:
+            messagebox.showwarning(window_name, "Either the Weight, Capacity, or Aircraft Id is missing or negative.")
 
     def delete(self):
         dcsql.delete_soft(self.classparam, self.read_entries())
@@ -239,9 +246,9 @@ class CategoryTransport(Category):
             if capacity_ok:
                 return transport
             else:
-                messagebox.showwarning("", "Not enough capacity on aircraft!")
+                messagebox.showwarning(window_name, "Not enough capacity on aircraft!")
         else:
-            messagebox.showwarning("", "Aircraft already has another destination!")
+            messagebox.showwarning(window_name, "Aircraft already has another destination!")
 
     def create(self):
         dcsql.create_record(self.check_and_return_transport())

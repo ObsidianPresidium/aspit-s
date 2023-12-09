@@ -69,8 +69,8 @@ class Transport(Object):
     date = Column(Date)
     container_id = Column(Integer, ForeignKey("containers.id"), nullable=False)
     aircraft_id = Column(Integer, ForeignKey("aircraft.id"), nullable=False)
-    attributes_names = ["id", "date", "containerid", "aircraftid"]
-    valid_test_attribute = 2
+    attributes_names = ["id", "date", "container_id", "aircraft_id"]
+    valid_test_attribute = 3
 
     def __init__(self, date, container_id, aircraft_id, id=-1):
         super().__init__()

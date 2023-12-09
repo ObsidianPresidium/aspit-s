@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session  # install sqlalchemy with the command "pip install SQLAlchemy" in a terminal.
 from sqlalchemy.engine import Engine
 from sqlalchemy import create_engine, select, event, update, delete
+from dateutil import parser
 from danskcargo_data import export_engine, Container, Aircraft, Transport
 
 db = "sqlite:///danskcargo_database.db"
@@ -57,7 +58,8 @@ def delete_soft(classparam, entry_tuple):
     # soft delete a record in a table specified by classparam by making one of its values invalid
     matched_dict = match_attributes_and_entry_tuple(classparam, entry_tuple)
     if classparam == Transport:
-        matched_dict["containerid"] = -1
+        matched_dict["aircraft_id"] = -1
+        matched_dict["date"] = parser.parse(matched_dict["date"])
     elif classparam == Aircraft:
         matched_dict["capacity"] = -1
     elif classparam == Container:
