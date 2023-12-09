@@ -1,8 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
-import tkinter.messagebox as tkmsg
+from tkinter import messagebox
 import danskcargo_sql as dcsql
+import danskcargo_data as dcd
+import danskcargo_func as dcf
 from danskcargo_data import Container, Aircraft, Transport
+
 
 even_row_color = "#cccccc"
 odd_row_color = "#dddddd"
@@ -56,7 +59,7 @@ class Category:
         
         self.button_frame = tk.Frame(self.controls_frame)
         self.button_frame.grid(row=2, column=0, padx=padx, pady=pady)
-        self.button_create = tk.Button(self.button_frame, text="Create")
+        self.button_create = tk.Button(self.button_frame, text="Create", command=self.create)
         self.button_create.grid(row=0, column=0, padx=padx, pady=pady)
         self.button_update = tk.Button(self.button_frame, text="Update", command=self.update)
         self.button_update.grid(row=0, column=1, padx=padx, pady=pady)
@@ -116,6 +119,12 @@ class Category:
         self.empty_tree()
         self.read_table()
 
+    def create(self):
+        record = dcd.convert_from_tuple(self.classparam, self.read_entries())
+        dcsql.create_record(record)
+        self.clear_entries()
+        self.refresh_tree()
+
     def update(self):
         dcsql.update_record(self.classparam, self.read_entries())
         self.refresh_tree()
@@ -151,9 +160,9 @@ class CategoryContainer(Category):
         entry_id.grid(row=1, column=0, padx=padx, pady=pady)
         entry_weight = tk.Entry(self.edit_frame, width=4)
         entry_weight.grid(row=1, column=1, padx=padx, pady=pady)
-        entry_destination = tk.Entry(self.edit_frame, width=8)
+        entry_destination = tk.Entry(self.edit_frame, width=12)
         entry_destination.grid(row=1, column=2, padx=padx, pady=pady)
-        entry_weather = tk.Entry(self.edit_frame, width=6)
+        entry_weather = tk.Entry(self.edit_frame, width=8)
         entry_weather.grid(row=1, column=3, padx=padx, pady=pady)
 
         self.entries = [entry_id, entry_weight, entry_destination, entry_weather]
@@ -180,7 +189,7 @@ class CategoryAircraft(Category):
         label_registration.grid(row=0, column=2, padx=padx, pady=pady)
         entry_id = tk.Entry(self.edit_frame, width=4)
         entry_id.grid(row=1, column=0, padx=padx, pady=pady)
-        entry_maxweight = tk.Entry(self.edit_frame, width=4)
+        entry_maxweight = tk.Entry(self.edit_frame, width=8)
         entry_maxweight.grid(row=1, column=1, padx=padx, pady=pady)
         entry_registration = tk.Entry(self.edit_frame, width=8)
         entry_registration.grid(row=1, column=2, padx=padx, pady=pady)
@@ -207,20 +216,42 @@ class CategoryTransport(Category):
         label_id.grid(row=0, column=0, padx=padx, pady=pady)
         label_date = tk.Label(self.edit_frame, text="Date")
         label_date.grid(row=0, column=1, padx=padx, pady=pady)
-        label_containerid = tk.Label(self.edit_frame, text="Container ID")
+        label_containerid = tk.Label(self.edit_frame, text="Container Id")
         label_containerid.grid(row=0, column=2, padx=padx, pady=pady)
-        label_aircraftid = tk.Label(self.edit_frame, text="Aircraft ID")
+        label_aircraftid = tk.Label(self.edit_frame, text="Aircraft Id")
         label_aircraftid.grid(row=0, column=3, padx=padx, pady=pady)
         entry_id = tk.Entry(self.edit_frame, width=4)
         entry_id.grid(row=1, column=0, padx=padx, pady=pady)
-        entry_date = tk.Entry(self.edit_frame, width=4)
+        entry_date = tk.Entry(self.edit_frame, width=12)
         entry_date.grid(row=1, column=1, padx=padx, pady=pady)
-        entry_containerid = tk.Entry(self.edit_frame, width=8)
+        entry_containerid = tk.Entry(self.edit_frame, width=4)
         entry_containerid.grid(row=1, column=2, padx=padx, pady=pady)
         entry_aircraftid = tk.Entry(self.edit_frame, width=4)
         entry_aircraftid.grid(row=1, column=3, padx=padx, pady=pady)
 
         self.entries = [entry_id, entry_date, entry_containerid, entry_aircraftid]
+
+    def check_and_return_transport(self):
+        transport = dcd.convert_from_tuple(self.classparam, self.read_entries())
+        capacity_ok = dcf.capacity_available(dcsql.get_record(dcd.Aircraft, self.entries[3].get()), self.entries[1].get(), dcsql.get_record(dcd.Container, self.entries[2].get()))  # self.entries[3] refers to target aircraft id, self.entries[1] refers to target date, self.entries[2] refers to target container id
+        destination_ok = dcf.max_one_destination(dcsql.get_record(dcd.Aircraft, self.entries[3].get()), self.entries[1].get(), dcsql.get_record(dcd.Container, self.entries[2].get()))  # self.entries[3] refers to target aircraft id, self.entries[1] refers to target date, self.entries[2] refers to target container id
+        if destination_ok:
+            if capacity_ok:
+                return transport
+            else:
+                messagebox.showwarning("", "Not enough capacity on aircraft!")
+        else:
+            messagebox.showwarning("", "Aircraft already has another destination!")
+
+    def create(self):
+        dcsql.create_record(self.check_and_return_transport())
+        self.clear_entries()
+        self.refresh_tree()
+
+    def update(self):
+        dcsql.update_record(dcd.Transport, self.check_and_return_transport().convert_to_tuple())
+        self.clear_entries()
+        self.refresh_tree()
 
 
 container = CategoryContainer()
