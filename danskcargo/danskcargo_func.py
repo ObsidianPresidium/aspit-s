@@ -22,6 +22,15 @@ def booked_cargo(aircraft, date_):
             weight += dcsql.get_record(dcd.Container, record.container_id)
         return weight
 
+def get_transport_conflict(classparam, id):
+    with Session(dcsql.engine) as session:
+        if classparam == dcd.Container:
+            return session.scalars(select(dcd.Transport).where(dcd.Transport.container_id == id).where(dcd.Transport.aircraft_id != -1)).first()
+        elif classparam == dcd.Aircraft:
+            return session.scalars(select(dcd.Transport).where(dcd.Transport.aircraft_id == id).where(dcd.Transport.aircraft_id != -1)).first()
+        else:
+            return False
+
 def capacity_available(aircraft, date_, new_container):
     # does the already booked cargo plus the new container weigh less than the aircraft's maximum cargo weight?
     date_ = ensure_date(date_)

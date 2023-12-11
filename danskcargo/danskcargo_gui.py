@@ -137,9 +137,13 @@ class Category:
             messagebox.showwarning(window_name, "Either the Weight, Capacity, or Aircraft Id is missing or negative.")
 
     def delete(self):
-        dcsql.delete_soft(self.classparam, self.read_entries())
-        self.clear_entries()
-        self.refresh_tree()
+        transport_conflict = dcf.get_transport_conflict(self.classparam, int(self.entries[0].get()))
+        if transport_conflict:
+            messagebox.showwarning(window_name, f"Transport with id {transport_conflict.id} depends on this container or aircraft. Delete that transport first before deleting this record.")
+        else:
+            dcsql.delete_soft(self.classparam, self.read_entries())
+            self.clear_entries()
+            self.refresh_tree()
 
 
 class CategoryContainer(Category):
@@ -198,7 +202,7 @@ class CategoryAircraft(Category):
         entry_id.grid(row=1, column=0, padx=padx, pady=pady)
         entry_maxweight = tk.Entry(self.edit_frame, width=8)
         entry_maxweight.grid(row=1, column=1, padx=padx, pady=pady)
-        entry_registration = tk.Entry(self.edit_frame, width=8)
+        entry_registration = tk.Entry(self.edit_frame, width=12)
         entry_registration.grid(row=1, column=2, padx=padx, pady=pady)
 
         self.entries = [entry_id, entry_maxweight, entry_registration]
