@@ -1,10 +1,10 @@
 import tkinter as tk
+import ctypes
 from tkinter import ttk
 from tkinter import messagebox
 import danskcargo_sql as dcsql
 import danskcargo_data as dcd
 import danskcargo_func as dcf
-from danskcargo_data import Container, Aircraft, Transport
 
 
 window_name = "Danskcargo Container App"
@@ -15,8 +15,10 @@ treeview_foreground = "black"
 treeview_selected = "#206030"
 row_height = 24
 
+ctypes.windll.shcore.SetProcessDpiAwareness(1)  # Blurry display fix for Windows when display scaling is not 100%
 main_window = tk.Tk()
 main_window.title(window_name)
+main_window.resizable(False, False)
 padx=8
 pady=4
 
@@ -33,7 +35,7 @@ class Category:
         # region globals
         self.entries = []
         self.category_name = category_name
-        self.classparam = eval(category_name.capitalize())
+        self.classparam = eval("dcd." + category_name.capitalize())
         # endregion globals
 
         # region gui
@@ -80,7 +82,7 @@ class Category:
 
     def write_entries(self, values):
         if len(values) != 0:
-            if self.classparam != Container:  # containers have the weather entry also, we need to circumvent an error
+            if self.classparam != dcd.Container:  # containers have the weather entry also, we need to circumvent an error
                 if len(values) != len(self.entries):
                     raise ValueError("There are either too many or too few values to insert into the entries in this category!")
 
