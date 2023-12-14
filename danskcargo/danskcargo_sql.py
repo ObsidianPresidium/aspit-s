@@ -1,3 +1,4 @@
+import sqlalchemy.exc
 from sqlalchemy.orm import Session  # install sqlalchemy with the command "pip install SQLAlchemy" in a terminal.
 from sqlalchemy.engine import Engine
 from sqlalchemy import create_engine, select, event, update, delete
@@ -67,6 +68,9 @@ def delete_soft(classparam, entry_tuple):
     else:
         raise KeyError("Unknown record type passed to delete_soft function.")
 
-    with Session(engine) as session:
-        session.execute(update(classparam).where(classparam.id == matched_dict["id"]).values(matched_dict))
-        session.commit()
+    try:
+        with Session(engine) as session:
+            session.execute(update(classparam).where(classparam.id == matched_dict["id"]).values(matched_dict))
+            session.commit()
+    except sqlalchemy.exc.IntegrityError:
+        delete_hard(classparam, entry_tuple)
