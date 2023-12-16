@@ -142,7 +142,7 @@ class CategoryCustomer(Category):
     def __init__(self):
         super().__init__("customer")
         self.tree["columns"] = ("id", "name", "phone")
-        self.tree.column("id", anchor=tk.W, width=40)
+        self.tree.column("id", anchor=tk.E, width=40)
         self.tree.column("name", anchor=tk.W, width=150)
         self.tree.column("phone", anchor=tk.W, width=100)
         self.tree.heading("id", text="Id", anchor=tk.CENTER)
@@ -168,7 +168,7 @@ class CategoryTrip(Category):
     def __init__(self):
         super().__init__("trip")
         self.tree["columns"] = ("id", "route", "departure", "capacity")
-        self.tree.column("id", anchor=tk.W, width=40)
+        self.tree.column("id", anchor=tk.E, width=40)
         self.tree.column("route", anchor=tk.W, width=120)
         self.tree.column("departure", anchor=tk.W, width=80)
         self.tree.column("capacity", anchor=tk.W, width=60)
@@ -202,7 +202,7 @@ class CategoryBookings(Category):
         super().__init__("booking")
         self.root_frame.configure(text="Bookings")
         self.tree["columns"] = ("id", "customer_id", "trip_id", "num_passengers")
-        self.tree.column("id", anchor=tk.W, width=80)
+        self.tree.column("id", anchor=tk.E, width=80)
         self.tree.column("customer_id", anchor=tk.W, width=80)
         self.tree.column("trip_id", anchor=tk.W, width=80)
         self.tree.column("num_passengers", anchor=tk.W, width=80)
@@ -232,20 +232,25 @@ class CategoryBookings(Category):
 
     def check_and_return_booking(self):
         entries = self.read_entries()
-        if pbf.space_for_input_passengers(entries[3], entries[2]):
+        if pbf.space_for_input_passengers(int(entries[3]), int(entries[2])):
             return pbd.convert_from_tuple(pbd.Booking, entries)
         else:
             messagebox.showwarning(window_name, "There is not enough capacity on this trip for these passengers!")
+            return None
 
     def create(self):
-        pbsql.create_record(self.check_and_return_booking())
-        self.clear_entries()
-        self.refresh_tree()
+        booking = self.check_and_return_booking()
+        if booking is not None:
+            pbsql.create_record(booking)
+            self.clear_entries()
+            self.refresh_tree()
 
     def update(self):
-        pbsql.update_record(pbd.Booking, self.check_and_return_booking().convert_to_tuple())
-        self.clear_entries()
-        self.refresh_tree()
+        booking = self.check_and_return_booking()
+        if booking is not None:
+            pbsql.update_record(pbd.Booking, booking.convert_to_tuple())
+            self.clear_entries()
+            self.refresh_tree()
 
 customer = CategoryCustomer()
 trip = CategoryTrip()
