@@ -2,3 +2,6 @@ sqlalchemy
 python-dateutil
 pillow
 requests
+numpy
+pandas
+matplotlib

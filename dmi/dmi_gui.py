@@ -15,13 +15,14 @@ pady=4
 df.parseargs(sys.argv[1:])
 api_key = df.get_key()
 
-initial_map = Image.open("map.png")
+initial_map = Image.open("denmark_osm_small.png")
+initial_map_tk = ImageTk.PhotoImage(initial_map)
 initial_map_resized = initial_map.resize((500, 426))
 initial_map_resized = ImageTk.PhotoImage(initial_map_resized)
 
 map_frame = tk.Frame(main_window)
 map_frame.pack()
-map_label = tk.Label(map_frame, image=initial_map_resized)
+map_label = tk.Label(map_frame, image=initial_map_tk)
 map_label.pack()
 
 controls_button_frame = tk.Frame(main_window)
