@@ -3,22 +3,14 @@ import math
 import os
 import tkinter.messagebox as messagebox
 import tkinter as tk
+import tkintermapview
+from PIL import Image, ImageTk
 import datetime
 import dmi_rest as dr
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from PIL import Image, ImageTk
 
-new_image_tk = None
 api_key = None
 filename = ""
 window_name = "DMI Kola"  # Kort over lynnedslag app
-map_w = 793
-map_h = 637
-
-initial_image = Image.open("denmark_osm_small.png")
-latest_image = None
 
 def parseargs(argobject):
     global api_key, filename
@@ -65,29 +57,8 @@ def get_key():
                     return api_key
         return False
 
-def coord_to_pixel(lat_list, lon_list):
-    x_list = []
-    y_list = []
-    #             W      E       N       S
-    map_coords = (7.625, 15.601, 57.979, 54.419)
-    map_lat_bottom_rad = map_coords[3] * math.pi / 180
-    map_lon_delta = (map_coords[1] - map_coords[0])
-    world_map_width = ((map_w / map_lon_delta) * 360) / (2 * math.pi)
-    map_offset_y = (world_map_width / 2 * math.log((1 + math.sin(map_lat_bottom_rad)) / (1 - math.sin(map_lat_bottom_rad))))
 
-    for lat, lon in zip(lat_list, lon_list):
-        lat_rad = lat * math.pi / 180
-        x = (lon - map_coords[0]) * (map_w / map_lon_delta)
-        y = map_h - ((world_map_width / 2 * math.log((1 + math.sin(lat_rad)) / (1 - math.sin(lat_rad)))) - map_offset_y)
-        x_list.append(x)
-        y_list.append(y)
-
-    return x_list, y_list
-
-
-def do_kola(label : tk.Label, year):
-    global latest_image
-    global new_image_tk
+def do_kola(mapview : tkintermapview.TkinterMapView, year):
     try:
         year = int(year)
     except ValueError:
@@ -98,17 +69,12 @@ def do_kola(label : tk.Label, year):
         messagebox.showerror(window_name, "Årstal er ugyldigt.\nPrøver du at tilgå data fra fremtiden eller før år 2000?")
         return 1
 
-    lightning_strikes = dr.get_lightning(year, api_key, filename)
-    new_image = initial_image.copy()
     bolt = Image.open("bolt.png")
-    bolt_resized = bolt.resize((20, 24))
-    x_list, y_list = coord_to_pixel(*lightning_strikes)
-    for x, y in zip(x_list, y_list):
-        position = (int(x) - 10, int(y) - 12)  # 41 and 48 are half of the bolt images width and height
-        new_image.paste(bolt_resized, position, bolt_resized)
+    bolt = bolt.resize((20, 24))
+    bolt = ImageTk.PhotoImage(bolt)
+    lon_strikes, lat_strikes = dr.get_lightning(year, api_key, filename)
 
-    latest_image = new_image
-    new_image.save("lightning_map.png")
-    new_image_tk = ImageTk.PhotoImage(new_image)
-    label.configure(image=new_image_tk)
+    for lon, lat in zip(lon_strikes, lat_strikes):
+        print(f"Lightning strike at {lon}, {lat}")
+        current_marker = mapview.set_marker(lon, lat, icon=bolt)
 
