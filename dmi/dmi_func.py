@@ -31,6 +31,7 @@ map_h = 637
 initial_image = Image.open("denmark_osm_small.png")
 latest_image: Image = None
 
+
 def parseargs(argobject):
     global api_key, filename
     try:
@@ -95,20 +96,6 @@ def load_into_func(mw : tk.Tk, pl : tk.Label, pi : tk.Text, pb : ttk.Progressbar
     progress_var = pv
 
 
-class BaseThread(threading.Thread):
-    def __init__(self, callback=None, callback_args=None, *args, **kwargs):
-        target = kwargs.pop('target')
-        super(BaseThread, self).__init__(target=self.target_with_callback, *args, **kwargs)
-        self.callback = callback
-        self.method = target
-        self.callback_args = callback_args
-
-    def target_with_callback(self):
-        self.method()
-        if self.callback is not None:
-            self.callback(*self.callback_args)
-
-
 def get_lightning(year, key, json_file=None):
     if json_file is None or json_file == "":
         url = f"https://dmigw.govcloud.dk/v2/lightningdata/collections/observation/items"
@@ -159,7 +146,6 @@ def log(info : str, step : float=-1, bar_info : str | None=None):
         progress_bar.step(0.9)  # this is necessary because there is no float var in Tkinter
 
 
-
 def coord_to_pixel(lat_list, lon_list):
     global progress_bar
     global progress
@@ -193,7 +179,6 @@ def step_calculate(lightning_strikes):
     log(f"Omregner koordinaterne fra {len(lightning_strikes[0])} lynnedslag til danmarkskortet...", 25, "Omregner koordinater...")
     x_list, y_list = coord_to_pixel(*lightning_strikes)
     step_create_image(x_list, y_list)
-
 
 
 def step_create_image(x_list, y_list):
@@ -258,6 +243,7 @@ def save_as():
                                                         ("PNG-billede", "*.png"),
                                                         ("Alle filer", "*.*")
                                                     ))
-        latest_image.save(new_filename, "PNG")
+        if type(latest_image) is str:
+            latest_image.save(new_filename, "PNG")
     else:
         tkinter.messagebox.showerror(window_name, message="Intet billede er tegnet endnu", parent=main_window)
