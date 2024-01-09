@@ -8,7 +8,9 @@ def get_lightning(year, key, json_file=None):
         url = f"https://dmigw.govcloud.dk/v2/lightningdata/collections/observation/items"
         headers = { "X-Gravitee-Api-Key": key }
         params = {
-            "datetime": f"{year}-01-01T00:00:00+01:00/{year + 1}-01-01T00:00:00+01:00"
+            "datetime": f"{year}-01-01T00:00:00+01:00/{year + 1}-01-01T00:00:00+01:00",
+            "limit": 299999,
+            "bbox": "7.6722,54.4127,15.6043,57.9733"
         }
         response = requests.get(url, headers=headers, params=params)
         if response.status_code != 200:
@@ -16,6 +18,7 @@ def get_lightning(year, key, json_file=None):
             raise SystemExit("Error!")
 
         response = response.json()
+        print(response)
     else:
         json_file = os.path.abspath(json_file)
         with open(json_file, "r", encoding="utf-8") as file:
