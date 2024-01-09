@@ -1,8 +1,10 @@
 import getopt
 import math
 import os
+import tkinter.messagebox
 import tkinter.messagebox as messagebox
 import tkinter as tk
+import tkinter.filedialog as filedialog
 from tkinter import ttk
 import datetime
 import requests
@@ -17,14 +19,17 @@ progress_info: tk.Text
 progress_label: tk.Label
 map_label: tk.Label
 request_button: tk.Button
-progress = 0
+main_window: tk.Tk
+progress: int = 0
+progressf: float = 0
+progress_var: tk.IntVar
 filename = ""
 window_name = "DMI Kola"  # Kort over lynnedslag app
 map_w = 793
 map_h = 637
 
 initial_image = Image.open("denmark_osm_small.png")
-latest_image = None
+latest_image: Image = None
 
 def parseargs(argobject):
     global api_key, filename
@@ -72,18 +77,22 @@ def get_key():
         return False
 
 
-def load_into_func(pl : tk.Label, pi : tk.Text, pb : ttk.Progressbar, ml : tk.Label, rb: tk.Button):
+def load_into_func(mw : tk.Tk, pl : tk.Label, pi : tk.Text, pb : ttk.Progressbar, pv : tk.IntVar, ml : tk.Label, rb: tk.Button):
+    global main_window
     global progress_label
     global progress_info
     global progress_bar
+    global progress_var
     global map_label
     global request_button
 
+    main_window = mw
     progress_label = pl
     progress_info = pi
     progress_bar = pb
     map_label = ml
     request_button = rb
+    progress_var = pv
 
 
 class BaseThread(threading.Thread):
@@ -115,7 +124,6 @@ def get_lightning(year, key, json_file=None):
             raise SystemExit("Error!")
 
         response = response.json()
-        print(response)
     else:
         json_file = os.path.abspath(json_file)
         with open(json_file, "r", encoding="utf-8") as file:
@@ -131,29 +139,35 @@ def get_lightning(year, key, json_file=None):
     step_calculate((lon_strikes, lat_strikes))
 
 
-
-def log(info : str, step : float=-1):
+def log(info : str, step : float=-1, bar_info : str | None=None):
     global progress_info
     global progress_bar
     global progress
-    step = 99.9 if step > 99.9 else step
+    global progressf
+    global progress_var
     progress_info.configure(state="normal")
     progress_info.insert("1.0", info + "\n")
     progress_info.configure(state="disabled")
-    progress_label.configure(text=info)
+    progress_label.configure(text=info if bar_info is None else bar_info)
 
     if step != -1:
         progress = step
-        progress_bar.step(step)
+        progressf = step
+        progress_var.set(int(progress))
+    elif step >= 100:
+        progress_var.set(99)
+        progress_bar.step(0.9)  # this is necessary because there is no float var in Tkinter
 
 
 
 def coord_to_pixel(lat_list, lon_list):
     global progress_bar
     global progress
+    global progressf
     x_list = []
     y_list = []
-    step_delta = (50 - progress) / len(lat_list)
+    step_delta: float = (50 - progress) / len(lat_list)
+    progress_bar.stop()
     #             W      E       N       S
     map_coords = (7.625, 15.601, 57.979, 54.419)
     map_lat_bottom_rad = map_coords[3] * math.pi / 180
@@ -167,15 +181,16 @@ def coord_to_pixel(lat_list, lon_list):
         y = map_h - ((world_map_width / 2 * math.log((1 + math.sin(lat_rad)) / (1 - math.sin(lat_rad)))) - map_offset_y)
         x_list.append(x)
         y_list.append(y)
-        progress += step_delta
-        progress_bar.step(progress)
+        progressf += step_delta
+        progress = int(progressf)
+        progress_var.set(int(progressf))
 
     return x_list, y_list
 
 
 def step_calculate(lightning_strikes):
     progress_bar.configure(mode="determinate")
-    log(f"Omregner koordinaterne fra {len(lightning_strikes[0])} lynnedslag til danmarkskortet...", 25)
+    log(f"Omregner koordinaterne fra {len(lightning_strikes[0])} lynnedslag til danmarkskortet...", 25, "Omregner koordinater...")
     x_list, y_list = coord_to_pixel(*lightning_strikes)
     step_create_image(x_list, y_list)
 
@@ -185,22 +200,25 @@ def step_create_image(x_list, y_list):
     global latest_image
     global new_image_tk
     global progress
+    global progressf
+    global progress_var
     log(f"Sætter lyn-ikoner på danmarkskortet...")
     new_image = initial_image.copy()
     bolt = Image.open("bolt.png")
-    bolt_resized = bolt.resize((20, 24))
-    step_delta = (99.9 - progress) / len(x_list)
+    bolt_resized = bolt.resize((5, 6))
+    step_delta : float = (99.9 - progress) / len(x_list)
     for x, y in zip(x_list, y_list):
-        position = (int(x) - 10, int(y) - 12)  # 41 and 48 are half of the bolt images width and height
+        position = (int(x) - 2, int(y) - 3)  # 41 and 48 are half of the bolt images width and height
         new_image.paste(bolt_resized, position, bolt_resized)
-        progress += step_delta
-        progress_bar.step(progress)
+        progressf += step_delta
+        progress = int(progressf)
+        progress_var.set(progress)
 
     latest_image = new_image
     new_image.save("lightning_map.png")
     new_image_tk = ImageTk.PhotoImage(new_image)
     map_label.configure(image=new_image_tk)
-    log("Færdig.", 99.9)
+    log("---FÆRDIG---", 100, "")
     request_button.configure(state="active")
 
 
@@ -217,13 +235,29 @@ def do_kola(year):
 
     download_thread = threading.Thread(target=get_lightning, args=(year, api_key, filename,))
     progress_bar.configure(mode="indeterminate")
+    progress_bar.start()
     request_button.configure(state="disabled")
+    log("---START---", bar_info="Klar")
     log(f"Downloader data fra år {year} fra DMI...")
     download_thread.start()
 
 
+def clear():
+    global new_image_tk
+    global latest_image
+    log("Sletter lynnedslag", 0, "")
+    latest_image = initial_image
+    new_image_tk = ImageTk.PhotoImage(initial_image)
+    map_label.configure(image=new_image_tk)
 
 
-
-
-
+def save_as():
+    if latest_image is not None:
+        new_filename = filedialog.asksaveasfilename(initialdir="~", title="Gem billede",
+                                                    filetypes=(
+                                                        ("PNG-billede", "*.png"),
+                                                        ("Alle filer", "*.*")
+                                                    ))
+        latest_image.save(new_filename, "PNG")
+    else:
+        tkinter.messagebox.showerror(window_name, message="Intet billede er tegnet endnu", parent=main_window)
