@@ -27,6 +27,7 @@ filename = ""
 window_name = "DMI Kola"  # Kort over lynnedslag app
 map_w = 793
 map_h = 637
+lightning_strikes_outside_borders = 0
 
 initial_image = Image.open("denmark_osm_small.png")
 latest_image: Image = None
@@ -136,7 +137,30 @@ def get_lightning(year, key, json_file=None):
         lon_strikes.append(feature["geometry"]["coordinates"][1])
         lat_strikes.append(feature["geometry"]["coordinates"][0])
 
-    step_calculate((lon_strikes, lat_strikes))
+    step_coord_to_pixel((lon_strikes, lat_strikes))
+
+
+def format_municipalities():
+    with open("municipalities_unformatted.json", "r") as f:
+        municipalities = json.load(f)
+
+    municipalities = municipalities["geometries"]["features"]
+    output = []
+
+    for polygon in municipalities:
+        name = polygon["properties"]["id"]
+        polygon = polygon["geometry"]["coordinates"][0]
+
+        name = name.replace("Ae", "Æ")
+        name = name.replace("ae", "æ")
+        name = name.replace("Oe", "Ø")
+        name = name.replace("oe", "ø")
+        out_polygon = []
+        for point in polygon:
+            out_polygon.append((point[0], point[1],))
+        output.append({"name": name, "polygon": out_polygon, "num_lightning_strikes": 0})
+
+    return output
 
 
 def log(info : str, step : float=-1, bar_info : str | None=None):
@@ -159,14 +183,13 @@ def log(info : str, step : float=-1, bar_info : str | None=None):
         progress_bar.step(0.9)  # this is necessary because there is no float var in Tkinter
 
 
-
 def coord_to_pixel(lat_list, lon_list):
     global progress_bar
     global progress
     global progressf
     x_list = []
     y_list = []
-    step_delta: float = (50 - progress) / len(lat_list)
+    step_delta: float = (33 - progress) / len(lat_list)
     progress_bar.stop()
     #             W      E       N       S
     map_coords = (7.625, 15.601, 57.979, 54.419)
@@ -188,15 +211,63 @@ def coord_to_pixel(lat_list, lon_list):
     return x_list, y_list
 
 
-def step_calculate(lightning_strikes):
+def is_point_in_polygon(point, polygon):
+    x, y = point
+    inside = False
+    n = len(polygon)
+    p1x, p1y = polygon[0]
+
+    for i in range(1, n+1):
+        p2x, p2y = polygon[i % n]
+        if y > min(p1y, p2y):
+            if y <= max(p1y, p2y):
+                if x <= max(p1x, p2x):
+                    if p1y != p2y:
+                        xints = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                        if p1x == p2x or x <= xints:
+                            inside = not inside
+        p1x, p1y = p2x, p2y
+    return inside
+
+
+def step_coord_to_pixel(lightning_strikes):
     progress_bar.configure(mode="determinate")
     log(f"Omregner koordinaterne fra {len(lightning_strikes[0])} lynnedslag til danmarkskortet...", 25, "Omregner koordinater...")
     x_list, y_list = coord_to_pixel(*lightning_strikes)
-    step_create_image(x_list, y_list)
+    municipalities = step_detect_municipality(*lightning_strikes)
+    step_create_image(x_list, y_list, municipalities)
 
 
+def step_detect_municipality(lon_list, lat_list):
+    global progressf
+    global progress
+    global progress_var
+    global lightning_strikes_outside_borders
+    lightning_strikes_outside_borders = 0
+    step_delta: float = (75 - progress) / len(lon_list)
+    log("Udregner hvor lynnedslag falder i kommunerne", 33, "Udregner lynnedslag for kommunerne")
+    municipalities = format_municipalities()
+    for x, y in zip(lon_list, lat_list):
+        municipality_found = False
+        current_municipality = 0
+        while not municipality_found:
+            if is_point_in_polygon((x, y), municipalities[current_municipality]["polygon"]):
+                municipalities[current_municipality]["num_lightning_strikes"] += 1
+                municipality_found = True
+                current_municipality -= 1
+            if current_municipality >= len(municipalities):
+                lightning_strikes_outside_borders += 1
+                municipality_found = True
+                current_municipality -= 1
+            current_municipality += 1
+        progressf += step_delta
+        progress = int(progressf)
+        progress_var.set(int(progressf))
 
-def step_create_image(x_list, y_list):
+    return municipalities
+
+
+def step_create_image(x_list, y_list, municipalities):
     global latest_image
     global new_image_tk
     global progress
@@ -218,6 +289,8 @@ def step_create_image(x_list, y_list):
     new_image.save("lightning_map.png")
     new_image_tk = ImageTk.PhotoImage(new_image)
     map_label.configure(image=new_image_tk)
+    log(f"Lynnedslag i Vallensbæk Kommune: {municipalities[68]['num_lightning_strikes']}", 100, "")
+    log(f"Lynnedslag udenfor Danmarks grænser: {lightning_strikes_outside_borders}", 100, "")
     log("---FÆRDIG---", 100, "")
     request_button.configure(state="active")
 
