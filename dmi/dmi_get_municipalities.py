@@ -9,5 +9,5 @@ response = requests.get(url, params=params)
 print(response.status_code)
 print(response.reason)
 print("Writing data..")
-with open("municipalities.json", "w") as f:
+with open("municipalities_by_id.json", "w") as f:
     f.write(response.text)
