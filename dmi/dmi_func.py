@@ -9,6 +9,7 @@ from tkinter import ttk
 import datetime
 import requests
 import json
+import time
 from PIL import Image, ImageTk
 import threading
 
@@ -17,25 +18,29 @@ api_key = None
 progress_bar: ttk.Progressbar
 progress_info: tk.Text
 progress_label: tk.Label
+progress_eta_label: tk.Label
 map_label: tk.Label
 request_button: tk.Button
 main_window: tk.Tk
 progress: int = 0
 progressf: float = 0
 progress_var: tk.IntVar
+tree: ttk.Treeview
 filename = ""
 window_name = "DMI Kola"  # Kort over lynnedslag app
 map_w = 793
 map_h = 637
 lightning_strikes_outside_borders = 0
+lightning_strikes_per_municipality = None
+do_write_lightning_strikes = False
 
 initial_image = Image.open("denmark_osm_small.png")
 latest_image: Image = None
 
 def parseargs(argobject):
-    global api_key, filename
+    global api_key, filename, do_write_lightning_strikes, lightning_strikes_per_municipality
     try:
-        opts, args = getopt.getopt(argobject, "hk:f:", ["help", "key=", "filename=", "json="])
+        opts, args = getopt.getopt(argobject, "hk:f:o:i:", ["help", "key=", "filename=", "json=", "output-lightning-strikes=", "input-lightning-strikes="])
     except getopt.GetoptError:
         print("An option was not recognized or you forgot to supply an argument with your parameter.")
         exit(1)
@@ -43,13 +48,17 @@ def parseargs(argobject):
         if opt in ("-h", "--help"):
             print("usage: dmi_gui.py [OPTION]")
             print("Options:")
-            print("-h                      v")
-            print("  --help                : Show this help message and exit.")
-            print("-k <key>                v")
-            print("  --key <key>           : DMI Lightning Data API Key")
-            print("-f <filename>           v")
-            print("  --filename <filename> v")
-            print("  --json <filename>     : Path to locally stored JSON response. Must be in DMI's format.")
+            print("-h                                      v")
+            print("  --help                                : Show this help message and exit.")
+            print("-k <key>                                v")
+            print("  --key <key>                           : DMI Lightning Data API Key")
+            print("-f <filename>                           v")
+            print("  --filename <filename>                 v")
+            print("  --json <filename>                     : Path to locally stored JSON response from DMI.")
+            print("-o <filename>                           v")
+            print("  --output-lightning-strikes <filename> : Write calculated lightning strikes per municipality to this file")
+            print("-i <filename>                           v")
+            print("  --input-lightning-strikes <filename>  : Use lightning strikes per municipality from this file instead of manually calculating")
             exit(0)
         elif opt in ("-k", "--key"):
             if arg is None:
@@ -61,6 +70,17 @@ def parseargs(argobject):
                 raise Exception("Supply a path to the file.")
             else:
                 filename = arg
+        elif opt in ("-o", "--output-lightning-strikes"):
+            if arg is None or arg == "":
+                raise Exception("Supply a path to the file.")
+            else:
+                do_write_lightning_strikes = arg
+        elif opt in ("-i", "--input-lightning-strikes"):
+            if arg is None or arg == "":
+                raise Exception("A filename is needed for the input lightning strikes option.")
+            else:
+                with open(arg, "r", encoding="utf-8") as file:
+                    lightning_strikes_per_municipality = json.load(file)
 
 
 def get_key():
@@ -78,36 +98,26 @@ def get_key():
         return False
 
 
-def load_into_func(mw : tk.Tk, pl : tk.Label, pi : tk.Text, pb : ttk.Progressbar, pv : tk.IntVar, ml : tk.Label, rb: tk.Button):
+def load_into_func(mw : tk.Tk, pl : tk.Label, pi : tk.Text, pb : ttk.Progressbar, pv : tk.IntVar, pe: tk.Label, ml : tk.Label, rb: tk.Button, tr: ttk.Treeview):
     global main_window
     global progress_label
     global progress_info
     global progress_bar
     global progress_var
+    global progress_eta_label
     global map_label
     global request_button
+    global tree
 
     main_window = mw
     progress_label = pl
     progress_info = pi
     progress_bar = pb
+    progress_eta_label = pe
     map_label = ml
     request_button = rb
     progress_var = pv
-
-
-class BaseThread(threading.Thread):
-    def __init__(self, callback=None, callback_args=None, *args, **kwargs):
-        target = kwargs.pop('target')
-        super(BaseThread, self).__init__(target=self.target_with_callback, *args, **kwargs)
-        self.callback = callback
-        self.method = target
-        self.callback_args = callback_args
-
-    def target_with_callback(self):
-        self.method()
-        if self.callback is not None:
-            self.callback(*self.callback_args)
+    tree = tr
 
 
 def get_lightning(year, key, json_file=None):
@@ -149,38 +159,48 @@ def format_municipalities():
 
     for polygon in municipalities:
         name = polygon["properties"]["id"]
-        polygon = polygon["geometry"]["coordinates"][0]
-
         name = name.replace("Ae", "Æ")
         name = name.replace("ae", "æ")
         name = name.replace("Oe", "Ø")
         name = name.replace("oe", "ø")
-        out_polygon = []
-        for point in polygon:
-            out_polygon.append((point[0], point[1],))
-        output.append({"name": name, "polygon": out_polygon, "num_lightning_strikes": 0})
+        if polygon["geometry"]["type"] == "MultiPolygon":
+            # do something completely different
+            for sub_polygon in polygon["geometry"]["coordinates"]:
+                out_polygon = []
+                for point in sub_polygon[0]:
+                    out_polygon.append((point[1], point[0],))
+                output.append({"name": name, "polygon": out_polygon, "num_lightning_strikes": 0})
+        elif polygon["geometry"]["type"] == "Polygon":
+            polygon = polygon["geometry"]["coordinates"][0]
+            out_polygon = []
+            for point in polygon:
+                out_polygon.append((point[1], point[0],))
+            output.append({"name": name, "polygon": out_polygon, "num_lightning_strikes": 0})
 
     return output
 
 
-def log(info : str, step : float=-1, bar_info : str | None=None):
+def log(info : str | None, step : float | None =-1, bar_info : str | None=None):
     global progress_info
     global progress_bar
     global progress
     global progressf
     global progress_var
-    progress_info.configure(state="normal")
-    progress_info.insert("1.0", info + "\n")
-    progress_info.configure(state="disabled")
-    progress_label.configure(text=info if bar_info is None else bar_info)
+    if info is not None:
+        progress_info.configure(state="normal")
+        progress_info.insert("1.0", info + "\n")
+        progress_info.configure(state="disabled")
+    if info is not None or bar_info is not None:
+        progress_label.configure(text=info if bar_info is None else bar_info)
 
-    if step != -1:
-        progress = step
-        progressf = step
-        progress_var.set(int(progress))
-    elif step >= 100:
-        progress_var.set(99)
-        progress_bar.step(0.9)  # this is necessary because there is no float var in Tkinter
+    if step is not None:
+        if step != -1:
+            progress = step
+            progressf = step
+            progress_var.set(int(progress))
+        elif step >= 100:
+            progress_var.set(99)
+            progress_bar.step(0.9)  # this is necessary because there is no float var in Tkinter
 
 
 def coord_to_pixel(lat_list, lon_list):
@@ -189,7 +209,7 @@ def coord_to_pixel(lat_list, lon_list):
     global progressf
     x_list = []
     y_list = []
-    step_delta: float = (33 - progress) / len(lat_list)
+    step_delta: float = (3 - progress) / len(lat_list)
     progress_bar.stop()
     #             W      E       N       S
     map_coords = (7.625, 15.601, 57.979, 54.419)
@@ -232,7 +252,7 @@ def is_point_in_polygon(point, polygon):
 
 def step_coord_to_pixel(lightning_strikes):
     progress_bar.configure(mode="determinate")
-    log(f"Omregner koordinaterne fra {len(lightning_strikes[0])} lynnedslag til danmarkskortet...", 25, "Omregner koordinater...")
+    log(f"Omregner koordinaterne fra {len(lightning_strikes[0])} lynnedslag til danmarkskortet...", 3, "Omregner koordinater...")
     x_list, y_list = coord_to_pixel(*lightning_strikes)
     municipalities = step_detect_municipality(*lightning_strikes)
     step_create_image(x_list, y_list, municipalities)
@@ -242,29 +262,61 @@ def step_detect_municipality(lon_list, lat_list):
     global progressf
     global progress
     global progress_var
+    global progress_eta_label
     global lightning_strikes_outside_borders
-    lightning_strikes_outside_borders = 0
-    step_delta: float = (75 - progress) / len(lon_list)
-    log("Udregner hvor lynnedslag falder i kommunerne", 33, "Udregner lynnedslag for kommunerne")
-    municipalities = format_municipalities()
-    for x, y in zip(lon_list, lat_list):
-        municipality_found = False
-        current_municipality = 0
-        while not municipality_found:
-            if is_point_in_polygon((x, y), municipalities[current_municipality]["polygon"]):
-                municipalities[current_municipality]["num_lightning_strikes"] += 1
-                municipality_found = True
-                current_municipality -= 1
-            if current_municipality >= len(municipalities):
-                lightning_strikes_outside_borders += 1
-                municipality_found = True
-                current_municipality -= 1
-            current_municipality += 1
-        progressf += step_delta
-        progress = int(progressf)
-        progress_var.set(int(progressf))
+    if not lightning_strikes_per_municipality:
+        lightning_strikes_outside_borders = 0
+        step_delta: float = (97 - progress) / len(lon_list)
+        log("Dette kommer til at tage laaang tid. Anbefaling: hent en kop kaffe.\nUdregner hvor lynnedslag falder i kommunerne", 3, "Udregner lynnedslag for kommunerne")
+        m = format_municipalities()
+        for x, y in zip(lon_list, lat_list):
+            municipality_found = False
+            current_municipality = 0
+            while not municipality_found:
+                if current_municipality >= len(m):
+                    lightning_strikes_outside_borders += 1
+                    municipality_found = True
+                    current_municipality -= 1
+                elif is_point_in_polygon((x, y), m[current_municipality]["polygon"]):
+                    m[current_municipality]["num_lightning_strikes"] += 1
+                    municipality_found = True
+                    current_municipality -= 1
+                current_municipality += 1
+            progressf += step_delta
+            progress = int(progressf)
+            progress_var.set(int(progressf))
 
-    return municipalities
+        # consolidate islands of municipalities into the same municipality in a differently structured dict
+        # from: { "name": string, "polygon": list, "num_lightning_strikes": int }
+        # to: { "<name>": <sum_num_lightning_strikes> }
+        municipalities_strikes = {}
+
+        for municipality in m:
+            if municipality["name"] not in municipalities_strikes.keys():
+                municipalities_strikes[municipality["name"]] = municipality["num_lightning_strikes"]
+            else:
+                municipalities_strikes[municipality["name"]] += municipality["num_lightning_strikes"]
+
+        if do_write_lightning_strikes:
+            with open(do_write_lightning_strikes, "w", encoding="utf-8") as file:
+                json.dump(municipalities_strikes, file)
+    else:
+        municipalities_strikes = lightning_strikes_per_municipality
+
+    progress_eta_label.configure(text="")
+    step_insert_into_treeview(municipalities_strikes)
+    return municipalities_strikes
+
+def step_insert_into_treeview(municipalities):
+    global tree
+    municipalities = {key: value for key, value in sorted(municipalities.items(), key=lambda item: item[1], reverse=True)}
+    for index, (municipality, lightning_strikes) in enumerate(municipalities.items()):
+        if index % 2 == 0:
+            tree.insert(parent="", index="end", iid=str(index), text="", values=(municipality, lightning_strikes),
+                        tags=("evenrow",))
+        else:
+            tree.insert(parent="", index="end", iid=str(index), text="", values=(municipality, lightning_strikes),
+                        tags=("oddrow",))
 
 
 def step_create_image(x_list, y_list, municipalities):
@@ -289,7 +341,7 @@ def step_create_image(x_list, y_list, municipalities):
     new_image.save("lightning_map.png")
     new_image_tk = ImageTk.PhotoImage(new_image)
     map_label.configure(image=new_image_tk)
-    log(f"Lynnedslag i Vallensbæk Kommune: {municipalities[68]['num_lightning_strikes']}", 100, "")
+    log(f"Lynnedslag i Ringkøbing-Skjern Kommune: {municipalities['Ringkøbing-Skjern']}", 100, "")
     log(f"Lynnedslag udenfor Danmarks grænser: {lightning_strikes_outside_borders}", 100, "")
     log("---FÆRDIG---", 100, "")
     request_button.configure(state="active")
