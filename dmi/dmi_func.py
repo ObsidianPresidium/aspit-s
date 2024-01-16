@@ -309,6 +309,7 @@ def step_detect_municipality(lon_list, lat_list):
 
 def step_insert_into_treeview(municipalities):
     global tree
+    tree.delete(*tree.get_children())
     municipalities = {key: value for key, value in sorted(municipalities.items(), key=lambda item: item[1], reverse=True)}
     for index, (municipality, lightning_strikes) in enumerate(municipalities.items()):
         if index % 2 == 0:
@@ -370,7 +371,9 @@ def do_kola(year):
 def clear():
     global new_image_tk
     global latest_image
+    global tree
     log("Sletter lynnedslag", 0, "")
+    tree.delete(*tree.get_children())
     latest_image = initial_image
     new_image_tk = ImageTk.PhotoImage(initial_image)
     map_label.configure(image=new_image_tk)

@@ -88,10 +88,14 @@ progress_eta_label.grid(row=2, column=0, padx=padx, pady=pady)
 
 progress_info_frame = tk.LabelFrame(progress_frame, text="Status")
 progress_info_frame.grid(row=0, column=1, sticky=tk.E, padx=padx, pady=pady)
-progress_info_text = tk.Text(progress_info_frame, bg="white", fg="black", height=10, width=40, state="disabled")
+progress_info_scroll = tk.Scrollbar(progress_info_frame)
+progress_info_text = tk.Text(progress_info_frame, bg="white", fg="black", height=10, width=40, state="disabled", yscrollcommand=progress_info_scroll.set)
+progress_info_scroll.config(command=progress_info_text.yview)
 progress_info_text.config(spacing1=1.5)
 progress_info_text.config(spacing3=1.5)
-progress_info_text.grid(padx=padx, pady=pady)
+progress_info_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(padx, 0), pady=pady)
+progress_info_scroll.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(0, padx), pady=pady)
+
 
 df.load_into_func(main_window, progress_bar_label, progress_info_text, progress_bar, progress, progress_eta_label, map_label, request_button, tree)
 
