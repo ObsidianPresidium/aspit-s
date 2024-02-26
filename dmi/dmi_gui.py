@@ -20,12 +20,14 @@ treeview_selected = "#209bef"
 row_height = 24
 
 
+
 style = ttk.Style()
 style.theme_use("default")
 style.configure("Treeview", background=treeview_background, foreground=treeview_foreground, rowheight=row_height, fieldbackground=treeview_background)
 style.map("Treeview", background=[("selected", treeview_selected)])
 
 df.parseargs(sys.argv[1:])
+df.ensure_data_files()
 api_key = df.get_key()
 
 progress = tk.IntVar()

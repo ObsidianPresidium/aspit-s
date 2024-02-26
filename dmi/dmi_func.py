@@ -10,6 +10,8 @@ import datetime
 import requests
 import json
 import time
+from dmi_get_municipalities import get_municipalities
+from dmi_get_municipality_name import get_municipality_name
 from PIL import Image, ImageTk
 import threading
 
@@ -389,3 +391,8 @@ def save_as():
         latest_image.save(new_filename, "PNG")
     else:
         tkinter.messagebox.showerror(window_name, message="Intet billede er tegnet endnu", parent=main_window)
+
+def ensure_data_files():
+    if not os.path.exists("municipalities_by_id.json") or not os.path.exists("municipalities_unformatted.json"):
+        get_municipalities()
+        get_municipality_name()
