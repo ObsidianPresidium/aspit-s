@@ -1,0 +1,10 @@
+{
+  "externalFiles": [
+    {
+      "filename": "external/input/melbourne-housing-snapshot/melb_data.csv.zip",
+      "category": "dataset",
+      "name": "dansbecker/melbourne-housing-snapshot",
+      "method": "kaggle"
+    }
+  ]
+}
