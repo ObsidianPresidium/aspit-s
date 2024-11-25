@@ -10,3 +10,4 @@ sparql-client
 OWSLib
 tqdm
 kaggle
+scikit-learn
