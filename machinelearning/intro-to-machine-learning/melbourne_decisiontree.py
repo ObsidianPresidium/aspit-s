@@ -3,7 +3,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 
-melbourne_file_path = "../external/input/melbourne-housing-snapshot/melb_data.csv"
+melbourne_file_path = "../../external/input/melbourne-housing-snapshot/melb_data.csv"
 
 def get_mae(max_leaf_nodes, train_X, val_X, train_y, val_y):
     model = DecisionTreeRegressor(max_leaf_nodes=max_leaf_nodes, random_state=0)

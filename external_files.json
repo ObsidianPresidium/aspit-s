@@ -5,6 +5,12 @@
       "category": "dataset",
       "name": "dansbecker/melbourne-housing-snapshot",
       "method": "kaggle"
+    },
+    {
+      "filename": "external/input/aer-credit-card-data/AER_credit_card_data.csv.zip",
+      "category": "dataset",
+      "name": "dansbecker/aer-credit-card-data",
+      "method": "kaggle"
     }
   ]
 }

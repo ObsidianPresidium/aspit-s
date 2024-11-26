@@ -3,7 +3,7 @@ from sklearn.metrics import mean_absolute_error
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-melbourne_file_path = "../external/input/melbourne-housing-snapshot/melb_data.csv"
+melbourne_file_path = "../../external/input/melbourne-housing-snapshot/melb_data.csv"
 melbourne_data = pd.read_csv(melbourne_file_path)
 
 y = melbourne_data.Price
